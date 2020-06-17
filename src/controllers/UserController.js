@@ -1,5 +1,13 @@
 const User = require('../models/User')
 const bcrypt = require('bcrypt')
+const jwt = require('jsonwebtoken')
+const authConfig = require('../config/auth.json')
+
+function generateToken(params = {}) {
+  return jwt.sign(params, authConfig.secret, {
+    expiresIn: 78300,
+  })
+}
 
 module.exports = {
   async login(req, res) {
@@ -35,10 +43,13 @@ module.exports = {
 
     user.password = undefined
 
+    const token = generateToken({ id: user.id })
+
     return res.status(200).send({
       status: 1,
       message: 'Usuário logado com sucesso',
       user,
+      token,
     })
   },
   async index(req, res) {
@@ -53,10 +64,16 @@ module.exports = {
   async store(req, res) {
     const { name, email, password } = req.body
     const user = await User.create({ name, email, password })
+    const token = generateToken({ id: user.id })
 
     return res
       .status(200)
-      .send({ status: 1, message: 'Usuário cadastrado com sucesso', user })
+      .send({
+        status: 1,
+        message: 'Usuário cadastrado com sucesso',
+        user,
+        token,
+      })
   },
   async update(req, res) {
     const { name, email, password } = req.body
