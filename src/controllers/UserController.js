@@ -1,6 +1,46 @@
 const User = require('../models/User')
+const bcrypt = require('bcrypt')
 
 module.exports = {
+  async login(req, res) {
+    const { email, password, isLogged } = req.body
+    const user = await User.findOne({ where: { email } })
+    if (!user) {
+      return res.status(400).send({
+        status: 0,
+        message: 'E-mail ou senha incorreto!',
+        user: {},
+      })
+    }
+
+    if (!bcrypt.compareSync(password, user.password)) {
+      return res.status(400).send({
+        status: 0,
+        message: 'Senha incorreta!',
+      })
+    }
+
+    const user_id = user.id
+
+    await User.update(
+      {
+        isLogged,
+      },
+      {
+        where: {
+          id: user_id,
+        },
+      }
+    )
+
+    user.password = undefined
+
+    return res.status(200).send({
+      status: 1,
+      message: 'Usuário logado com sucesso',
+      user,
+    })
+  },
   async index(req, res) {
     const user = await User.findAll()
 
@@ -41,6 +81,13 @@ module.exports = {
   },
   async delete(req, res) {
     const { user_id } = req.params
+    const user = User.findAll()
+    if (!user) {
+      return res.status(400).send({
+        status: 0,
+        message: 'Usuário não encontrado',
+      })
+    }
     await User.destroy({
       where: {
         id: user_id,
@@ -49,6 +96,7 @@ module.exports = {
     return res.status(200).send({
       status: 1,
       message: 'Usuário deletado com sucesso',
+      user,
     })
   },
 }
